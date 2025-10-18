@@ -3,3 +3,6 @@ pdfplumber
 openai
 python-dotenv
 flask_cors
+
+sentence-transformers
+faiss-cpu
