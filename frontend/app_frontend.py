@@ -19,7 +19,7 @@ st.markdown("""
 Upload a **legal case PDF** and click **Summarize Now ** to get:
 - A clean **one-line summary**
 - A **structured quick summary**
-- Option to **download JSON**
+- Option to **Download JSON**
 """)
 
 #  File uploader
