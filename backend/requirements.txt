@@ -2,3 +2,4 @@ flask
 pdfplumber
 openai
 python-dotenv
+flask_cors
