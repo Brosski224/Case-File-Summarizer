@@ -91,9 +91,9 @@ def summarize_pdf():
             "case_summary": "A short 2–3 sentence summary describing what the case is about."
         }}
 
-            Text of the judgment:
-            {text}
-            """
+        Text of the judgment:
+        {text}
+        """
 
     else:
         prompt = f"""
@@ -149,6 +149,111 @@ def summarize_pdf():
     except Exception as e:
         print(f"Model Error: {str(e)}")
         return jsonify({"error": f"Model Error: {str(e)}"}), 500
+
+
+@app.route("/compare-cases", methods=["POST"])
+def compare_cases():
+    """
+    Compare two case summaries and return detailed similarities and differences.
+    """
+    import json
+    import re
+    import requests
+
+    try:
+        data = request.get_json()
+        summaries = data.get("summaries", [])
+        model_choice = data.get("model_choice", "gemini").lower()
+
+        if len(summaries) < 2:
+            return jsonify({"error": "Please provide two case summaries"}), 400
+
+        comparisons = []
+
+        for i in range(len(summaries)):
+            for j in range(i + 1, len(summaries)):
+                caseA = summaries[i]
+                caseB = summaries[j]
+
+                prompt = f"""
+You are a professional legal analyst.
+Compare the following two Indian court judgments and explain:
+
+1. How they are similar — in terms of legal issues, statutes cited, reasoning, or outcome.
+2. How they are different — in terms of facts, arguments, or court interpretation.
+
+Return your answer STRICTLY in clean JSON format (no markdown, no code blocks):
+
+{{
+  "pair": "Case {i+1} vs Case {j+1}",
+  "similarities": ["point 1", "point 2", "point 3"],
+  "differences": ["point 1", "point 2", "point 3"]
+}}
+
+CASE A:
+{caseA}
+
+CASE B:
+{caseB}
+                """
+
+                # === Choose Model ===
+                if model_choice == "groq":
+                    GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+                    if not GROQ_API_KEY:
+                        return jsonify({"error": "Groq API key missing"}), 500
+
+                    res = requests.post(
+                        "https://api.groq.com/openai/v1/chat/completions",
+                        headers={
+                            "Authorization": f"Bearer {GROQ_API_KEY}",
+                            "Content-Type": "application/json",
+                        },
+                        json={
+                            "model": "llama-3.1-70b-versatile",
+                            "messages": [{"role": "user", "content": prompt}],
+                            "temperature": 0.7,
+                            "max_tokens": 2048,
+                        },
+                        timeout=150,
+                    )
+                    content = res.json()["choices"][0]["message"]["content"]
+
+                else:  # Gemini
+                    model = genai.GenerativeModel('gemini-2.5-flash')
+                    response = model.generate_content(prompt)
+                    content = response.text
+
+                # === Clean & Parse JSON ===
+                content = re.sub(r"```(json)?", "", content).strip()
+                content = content.replace("undefined", "").strip()
+
+                try:
+                    parsed = json.loads(content)
+                except Exception:
+                    json_match = re.search(r"\{.*\}", content, re.DOTALL)
+                    if json_match:
+                        try:
+                            parsed = json.loads(json_match.group())
+                        except Exception:
+                            parsed = {
+                                "pair": f"Case {i+1} vs Case {j+1}",
+                                "similarities": ["Could not fully parse JSON"],
+                                "differences": [content],
+                            }
+                    else:
+                        parsed = {
+                            "pair": f"Case {i+1} vs Case {j+1}",
+                            "similarities": ["Could not parse JSON"],
+                            "differences": [content],
+                        }
+
+                comparisons.append(parsed)
+
+        return jsonify({"comparisons": comparisons})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 if __name__ == "__main__":
