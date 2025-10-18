@@ -12,20 +12,22 @@ try:
 except ImportError:
     def clean_text(t): return t.strip()
 
+# Load environment variables
 load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
 
-# Configure Gemini API
+# ✅ Configure Gemini API
 api_key = os.getenv("GEMINI_API_KEY")
 if not api_key:
-    print("WARNING: GEMINI_API_KEY not found in environment variables")
+    print("⚠️ WARNING: GEMINI_API_KEY not found in environment variables")
 else:
-    print("Gemini API key loaded successfully")
+    print("✅ Gemini API key loaded successfully")
     genai.configure(api_key=api_key)
 
-# Extract text from PDF
+
+# 🧾 Extract text from PDF
 def extract_text_from_pdf(file):
     text = ""
     with pdfplumber.open(file) as pdf:
@@ -58,6 +60,10 @@ def test_gemini():
 
 @app.route("/summarize", methods=["POST"])
 def summarize_pdf():
+    """
+    Accepts a PDF file, extracts text, and generates a structured summary
+    using the Gemini API. Returns JSON output.
+    """
     file = request.files.get("file")
     mode = request.form.get("mode", "quick")
     model_choice = request.form.get("model_choice", "gemini").lower()
@@ -69,6 +75,7 @@ def summarize_pdf():
     if len(text.strip()) == 0:
         return jsonify({"error": "Empty or unreadable PDF"}), 400
 
+    # Truncate if too long
     if len(text) > 15000:
         text = text[:15000]
 
@@ -256,5 +263,6 @@ CASE B:
         return jsonify({"error": str(e)}), 500
 
 
+# 🚀 Run app
 if __name__ == "__main__":
     app.run(debug=True)
