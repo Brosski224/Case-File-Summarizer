@@ -13,16 +13,6 @@ Case-File-Summarizer is a lightweight, privacy-conscious toolkit for converting 
 - Concurrent processing of chunks using a ThreadPoolExecutor for faster summarization of large PDFs
 - Intended for local use to protect sensitive data; external APIs are only used if configured with keys
 
-## Repository structure
-[!--- Updated project report - concise and focused ---]
-# Case-File-PDF Summarizer
-
-Name: [Your Name]
-[!--- Updated project report - concise and focused ---]
-# Case-File-PDF Summarizer
-
-Name: [Your Name]
-
 Activity Completed
 ------------------
 Extraction of key details from case-file PDFs and generation of structured summaries from judgment documents. The system can also compare summaries to highlight similarities and differences across cases.
